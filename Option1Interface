@@ -1,0 +1,65 @@
+from flask import Flask, request, render_template_string
+
+app = Flask(__name__)
+
+# HTML template for the web interface
+html_template = """
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Patent Search Interface</title>
+    </head>
+    <body>
+        <h1>Patent Search Interface</h1>
+        <form method="post">
+            <label for="query">Enter text to search:</label><br><br>
+            <textarea id="query" name="query" rows="4" cols="50"></textarea><br><br>
+            <input type="submit" value="Search">
+        </form>
+        {% if results %}
+            <h2>Results:</h2>
+            <ul>
+                {% for result in results %}
+                    <li>{{ result }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </body>
+</html>
+"""
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+        results = []
+        if request.method == 'POST':
+                query_text = request.form['query']
+                # Call the prior_art_search function with the input text
+                results = run_prior_art_search(query_text)
+        return render_template_string(html_template, results=results)
+
+def run_prior_art_search(input_patent_text):
+        # Step 1: Query the PatentSearch API to get relevant patents
+        patents = query_patentsearch(input_patent_text, num_results=10)
+        if not patents:
+                return ["No patents found."]
+
+        # Step 2: Rank patents based on their similarity to the input text
+        ranked_patents, patent_embeddings = rank_patents(input_patent_text, patents)
+
+        # Step 3: Select only the top 5 most similar patents
+        top_patents = ranked_patents[:5]
+
+        # Step 4: Prepare the results to display
+        results = []
+        for idx, (patent, similarity) in enumerate(top_patents, 1):
+                result = f"{idx}. Patent Number: {patent['patent_id']}<br>"
+                result += f"   Title: {patent['patent_title']}<br>"
+                result += f"   Abstract: {patent['patent_abstract']}<br>"
+                result += f"   Similarity: {similarity:.4f}<br>"
+                result += f"   Date: {patent['patent_date']}<br><br>"
+                results.append(result)
+        return results
+
+if __name__ == '__main__':
+        app.run(debug=True)

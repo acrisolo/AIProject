@@ -1,0 +1,57 @@
+from flask import Flask, request, render_template_string
+from nbformat import read
+
+app = Flask(__name__)
+
+# Load the notebook content to access its code
+notebook_path = '/path/to/patent_project.ipynb'  # Update the path to your actual notebook file
+
+# Extract the `run_prior_art_search` function from the notebook file
+with open(notebook_path, 'r') as notebook_file:
+    notebook_content = read(notebook_file, as_version=4)
+
+# Define an HTML template for the interface
+html_template = """
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Patent Search Interface</title>
+    </head>
+    <body>
+        <h1>Patent Search Interface</h1>
+        <form method="post">
+            <label for="query">Enter text to search:</label><br><br>
+            <textarea id="query" name="query" rows="4" cols="50"></textarea><br><br>
+            <input type="submit" value="Search">
+        </form>
+        {% if results %}
+            <h2>Results:</h2>
+            <ul>
+                {% for result in results %}
+                    <li>{{ result }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </body>
+</html>
+"""
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    results = []
+    if request.method == 'POST':
+        query_text = request.form['query']
+        
+        # Placeholder: Call the search function. Replace with actual `run_prior_art_search` logic.
+        results = run_prior_art_search(query_text)  
+        
+    return render_template_string(html_template, results=results)
+
+def run_prior_art_search(query_text):
+    # Here you would include the function code extracted from your notebook.
+    # Placeholder logic for demonstration:
+    return [f"Result for '{query_text}': Sample patent data"]
+
+if __name__ == '__main__':
+    app.run(debug=True)
